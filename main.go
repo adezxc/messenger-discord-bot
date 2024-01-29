@@ -27,7 +27,7 @@ func main() {
 				Category: "",
 				Action: func(cCtx *cli.Context) error {
 					log.Printf("initiating database creation")
-					err := db.CreateDb("data.db")
+					err := db.CreateDb("./data/data.db")
 					if err != nil {
 						return err
 					}
@@ -40,7 +40,13 @@ func main() {
 				Usage:   "Read Messenger's JSON file into the database",
 				Action: func(cCtx *cli.Context) error {
 					log.Printf("initiating message import")
-					messages.ReadMessages(cCtx.Args().First())
+					filename := cCtx.Args().First()
+
+					err := messages.ProcessMessageFile(filename)
+					if err != nil {
+						return err
+					}
+
 					return nil
 				},
 			},

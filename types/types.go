@@ -9,9 +9,9 @@ import (
 	"golang.org/x/text/encoding/charmap"
 )
 
-type UnixTime time.Time
+type UnixTimeMs time.Time
 
-func (j *UnixTime) UnmarshalJSON(b []byte) error {
+func (j *UnixTimeMs) UnmarshalJSON(b []byte) error {
 	s := strings.Trim(string(b), "\"")
 	unixTime, err := strconv.ParseInt(s, 10, 64)
 	if err != nil {
@@ -19,11 +19,11 @@ func (j *UnixTime) UnmarshalJSON(b []byte) error {
 	}
 
 	t := time.Unix(unixTime/1000, 1000000*(unixTime%1000))
-	*j = UnixTime(t)
+	*j = UnixTimeMs(t)
 	return nil
 }
 
-func (j UnixTime) MarshalJSON() ([]byte, error) {
+func (j UnixTimeMs) MarshalJSON() ([]byte, error) {
 	return json.Marshal(time.Time(j).Unix())
 }
 
@@ -61,9 +61,15 @@ type MessageFile struct {
 
 type Message struct {
 	SenderName MessengerString `json:"sender_name"`
-	Timestamp  UnixTime        `json:"timestamp_ms"`
+	Timestamp  UnixTimeMs      `json:"timestamp_ms"`
 	Content    MessengerString `json:"content"`
+	Photos     []Photo         `json:"photo"`
 	Reactions  []Reaction      `json:"reactions,omitempty"`
+}
+
+type Photo struct {
+	URI               string `json:"uri"`
+	CreationTimestamp int64  `json:"creation_timestamp"`
 }
 
 type Participant struct {
