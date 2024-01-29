@@ -1,59 +1,53 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
+	"log"
 	"os"
 
-	"github.com/meilisearch/meilisearch-go"
+	"github.com/adezxc/messenger-discord-bot/db"
+	"github.com/adezxc/messenger-discord-bot/messages"
+	"github.com/urfave/cli"
 )
 
 func main() {
-	if len(os.Args) != 2 {
-		fmt.Fprintf(os.Stderr, "File name not provided\n")
-		os.Exit(1)
-	}
-	filename := os.Args[1]
+	app := &cli.App{
+		Name:  "Messenger Discord Bot",
+		Usage: "",
+		Action: func(*cli.Context) error {
+			fmt.Println("No serve function defined yet")
+			os.Exit(0)
+			return nil
+		},
+		Commands: []cli.Command{
+			{
+				Name:     "create-db",
+				Aliases:  []string{},
+				Usage:    "Create default DB with defined schema",
+				Category: "",
+				Action: func(cCtx *cli.Context) error {
+					log.Printf("initiating database creation")
+					err := db.CreateDb("data.db")
+					if err != nil {
+						return err
+					}
 
-	file, err := os.Open(filename)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "error: %v\n", err)
-		os.Exit(1)
+					return nil
+				}},
+			{
+				Name:    "import-message-file",
+				Aliases: []string{},
+				Usage:   "Read Messenger's JSON file into the database",
+				Action: func(cCtx *cli.Context) error {
+					log.Printf("initiating message import")
+					messages.ReadMessages(cCtx.Args().First())
+					return nil
+				},
+			},
+		},
 	}
-
-	messages := &MessageFile{}
-
-	decoder := json.NewDecoder(file)
-	err = decoder.Decode(&messages)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "error: %v\n", err)
-		os.Exit(1)
+	if err := app.Run(os.Args); err != nil {
+		log.Fatal(err)
 	}
-	client := meilisearch.NewClient(meilisearch.ClientConfig{
-		Host:   "http://localhost:7700",
-		APIKey: "aSampleMasterKey",
-	})
-	fmt.Println(messages.Messages[0].Content)
-
-	outputBytes, err := json.Marshal(messages.Messages)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "error: %v\n", err)
-		os.Exit(1)
-	}
-
-	_, err = client.Index("Messages").AddDocuments(outputBytes, "timestamp_ms")
-	if err != nil {
-		panic(err)
-	}
-
-	index, err := client.GetIndex("Messages")
-	if err != nil {
-		panic(err)
-	}
-	resp, err := index.GetDisplayedAttributes()
-	if err != nil {
-		panic(err)
-	}
-	fmt.Println(&resp)
 
 }
