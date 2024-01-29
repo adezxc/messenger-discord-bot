@@ -74,3 +74,20 @@ type Reaction struct {
 	Reaction MessengerString `json:"reaction"`
 	Actor    MessengerString `json:"actor"`
 }
+
+type ZincMessage struct {
+	SenderName MessengerString `json:"sender_name"`
+	Timestamp  UnixTime        `json:"timestamp_ms"`
+	Content    MessengerString `json:"content"`
+	Reactions  []ZincReaction  `json:"reactions,omitempty"`
+}
+
+type ZincMessages struct {
+	Index    string    `json:"index"`
+	Messages []Message `json:"records"`
+}
+
+type ZincReaction struct {
+	Index     string     `json:"index"`
+	Reactions []Reaction `json:"reactions"`
+}
