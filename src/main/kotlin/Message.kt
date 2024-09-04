@@ -66,10 +66,10 @@ object MessageSerializer : KSerializer<Message> {
     override fun deserialize(decoder: Decoder): Message {
         var senderName = ""
         var timestampMs: Instant = Instant.fromEpochMilliseconds(0)
-        var photosSerializer = ListSerializer(PhotoSerializer)
+        val photosSerializer = ListSerializer(PhotoSerializer)
         var photos: List<Photo> = mutableListOf()
         var content = ""
-        var reactionSerializer = ListSerializer(ReactionSerializer)
+        val reactionSerializer = ListSerializer(ReactionSerializer)
         var reactions: List<Reaction> = mutableListOf()
         var isGeoblockedForViewer = false
         @OptIn(ExperimentalSerializationApi::class)
