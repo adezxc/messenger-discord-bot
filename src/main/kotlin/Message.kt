@@ -66,31 +66,29 @@ object MessageSerializer : KSerializer<Message> {
     override fun deserialize(decoder: Decoder): Message {
         var senderName = ""
         var timestampMs: Instant = Instant.fromEpochMilliseconds(0)
-        val photosSerializer = ListSerializer(PhotoSerializer)
+        val photosSerializer = ListSerializer(Photo.serializer())
         var photos: List<Photo> = mutableListOf()
         var content = ""
-        val reactionSerializer = ListSerializer(ReactionSerializer)
+        val reactionSerializer = ListSerializer(Reaction.serializer())
         var reactions: List<Reaction> = mutableListOf()
         var isGeoblockedForViewer = false
         @OptIn(ExperimentalSerializationApi::class)
         decoder.decodeStructure(descriptor) {
             if (decodeSequentially()) {
-                senderName = decodeStringElement(descriptor, 0).byteInputStream(Charsets.UTF_8).toString()
+                senderName = decodeStringElement(descriptor, 0).toByteArray(Charsets.ISO_8859_1).toString(Charsets.UTF_8)
                 timestampMs = Instant.fromEpochMilliseconds(decodeLongElement(descriptor, 1))
                 photos = photosSerializer.deserialize(decoder)
-                content = decodeStringElement(descriptor, 3)
+                content = decodeStringElement(descriptor, 3).toByteArray(Charsets.ISO_8859_1).toString(Charsets.UTF_8)
                 reactions = reactionSerializer.deserialize(decoder)
                 isGeoblockedForViewer = decodeBooleanElement(descriptor, 5)
             } else while (true) {
                 when (val index = decodeElementIndex(descriptor)) {
                     0 -> senderName =
                         decodeStringElement(descriptor, 0).toByteArray(Charsets.ISO_8859_1).toString(Charsets.UTF_8)
-
                     1 -> timestampMs = Instant.fromEpochMilliseconds(decodeLongElement(descriptor, 1))
                     2 -> photos = photosSerializer.deserialize(decoder)
                     3 -> content =
                         decodeStringElement(descriptor, 3).toByteArray(Charsets.ISO_8859_1).toString(Charsets.UTF_8)
-
                     4 -> reactions = reactionSerializer.deserialize(decoder)
                     5 -> isGeoblockedForViewer = decodeBooleanElement(descriptor, 4)
                     CompositeDecoder.DECODE_DONE -> break
