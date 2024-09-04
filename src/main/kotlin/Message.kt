@@ -72,16 +72,8 @@ object MessageSerializer : KSerializer<Message> {
         val reactionSerializer = ListSerializer(Reaction.serializer())
         var reactions: List<Reaction> = mutableListOf()
         var isGeoblockedForViewer = false
-        @OptIn(ExperimentalSerializationApi::class)
         decoder.decodeStructure(descriptor) {
-            if (decodeSequentially()) {
-                senderName = decodeStringElement(descriptor, 0).toByteArray(Charsets.ISO_8859_1).toString(Charsets.UTF_8)
-                timestampMs = Instant.fromEpochMilliseconds(decodeLongElement(descriptor, 1))
-                photos = photosSerializer.deserialize(decoder)
-                content = decodeStringElement(descriptor, 3).toByteArray(Charsets.ISO_8859_1).toString(Charsets.UTF_8)
-                reactions = reactionSerializer.deserialize(decoder)
-                isGeoblockedForViewer = decodeBooleanElement(descriptor, 5)
-            } else while (true) {
+            while (true) {
                 when (val index = decodeElementIndex(descriptor)) {
                     0 -> senderName =
                         decodeStringElement(descriptor, 0).toByteArray(Charsets.ISO_8859_1).toString(Charsets.UTF_8)
@@ -116,12 +108,8 @@ object PhotoSerializer : KSerializer<Photo> {
     override fun deserialize(decoder: Decoder): Photo {
         var uri = ""
         var creationMs: Instant = Instant.fromEpochMilliseconds(0)
-        @OptIn(ExperimentalSerializationApi::class)
         decoder.decodeStructure(descriptor) {
-            if (decodeSequentially()) {
-                uri = decodeStringElement(descriptor, 0)
-                creationMs = Instant.fromEpochMilliseconds(decodeLongElement(descriptor, 1))
-            } else while (true) {
+             while (true) {
                 when (val index = decodeElementIndex(descriptor)) {
                     0 -> uri =
                         decodeStringElement(descriptor, 0)
@@ -151,12 +139,8 @@ object ReactionSerializer : KSerializer<Reaction> {
     override fun deserialize(decoder: Decoder): Reaction {
         var reaction = ""
         var actor = ""
-        @OptIn(ExperimentalSerializationApi::class)
         decoder.decodeStructure(descriptor) {
-            if (decodeSequentially()) {
-                reaction = decodeStringElement(descriptor, 0).toByteArray(Charsets.ISO_8859_1).toString(Charsets.UTF_8)
-                actor = decodeStringElement(descriptor, 1).toByteArray(Charsets.ISO_8859_1).toString(Charsets.UTF_8)
-            } else while (true) {
+            while (true) {
                 when (val index = decodeElementIndex(descriptor)) {
                     0 -> reaction =
                         decodeStringElement(descriptor, 0).toByteArray(Charsets.ISO_8859_1).toString(Charsets.UTF_8)
