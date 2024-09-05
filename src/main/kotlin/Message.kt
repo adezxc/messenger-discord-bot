@@ -7,28 +7,39 @@ import kotlinx.serialization.encoding.*
 import kotlinx.serialization.descriptors.*
 import kotlin.text.Charsets
 
+@Serializable
+data class DumpFile(
+    val messages: List<Message>,
+)
+
+@Serializable(with = ParticipantSerializer::class)
+data class Participant(
+    val name: String,
+)
+
 @Serializable(with = MessageSerializer::class)
 data class Message(
     val senderName: String,
     val timestampMs: Instant,
-    val photos: List<Photo>,
+    val videos: List<Media>,
+    val photos: List<Media>,
     val content: String,
     val reactions: List<Reaction>,
     val isGeoBlockedForViewer: Boolean
 ) {
     init {
-        require(senderName.isNotEmpty()) { "name cannot be empty" }
-        require(content.isNotEmpty()) { "content cannot be empty" }
+        //require(senderName.isNotEmpty()) { "name cannot be empty" }
+        //require(content.isNotEmpty()) { "content cannot be empty" }
     }
 }
 
-@Serializable(with = PhotoSerializer::class)
-data class Photo(
+@Serializable(with = MediaSerializer::class)
+data class Media(
     val uri: String,
     val creationMs: Instant,
 ) {
     init {
-        require(uri.isNotEmpty()) { "name cannot be empty" }
+        //require(uri.isNotEmpty()) { "name cannot be empty" }
     }
 }
 
@@ -43,11 +54,39 @@ data class Reaction(
     }
 }
 
+object ParticipantSerializer : KSerializer<Participant> {
+    override val descriptor: SerialDescriptor =
+        buildClassSerialDescriptor("Participant") {
+            element<String>("name")
+        }
+
+    override fun serialize(encoder: Encoder, value: Participant) {
+        encoder.encodeStructure(descriptor) {
+            encodeStringElement(descriptor, 0, value.name)
+        }
+    }
+
+    override fun deserialize(decoder: Decoder): Participant {
+        var name = ""
+        decoder.decodeStructure(descriptor) {
+            while (true) {
+                when (val index = decodeElementIndex(descriptor)) {
+                    0 -> name = decodeStringElement(descriptor, 0)
+                    CompositeDecoder.DECODE_DONE -> break
+                    else -> error("Unexpected index: $index")
+                }
+            }
+        }
+        return Participant(name.toByteArray(Charsets.ISO_8859_1).toString(Charsets.UTF_8))
+    }
+}
+
 object MessageSerializer : KSerializer<Message> {
     override val descriptor: SerialDescriptor = buildClassSerialDescriptor("Message") {
         element<String>("sender_name")
         element<Long>("timestamp_ms")
-        element<List<Photo>>("photos")
+        element<List<Media>>("videos")
+        element<List<Media>>("photos")
         element<String>("content")
         element<List<Reaction>>("reactions")
         element<Boolean>("is_geoblocked_for_viewer")
@@ -57,7 +96,8 @@ object MessageSerializer : KSerializer<Message> {
         encoder.encodeStructure(descriptor) {
             encodeStringElement(descriptor, 0, value.senderName)
             encodeLongElement(descriptor, 1, value.timestampMs.toEpochMilliseconds())
-            ListSerializer(PhotoSerializer).serialize(encoder, value.photos)
+            ListSerializer(MediaSerializer).serialize(encoder, value.videos)
+            ListSerializer(MediaSerializer).serialize(encoder, value.photos)
             encodeStringElement(descriptor, 3, value.content)
             ListSerializer(ReactionSerializer).serialize(encoder, value.reactions)
             encodeBooleanElement(descriptor, 5, value.isGeoBlockedForViewer)
@@ -66,8 +106,9 @@ object MessageSerializer : KSerializer<Message> {
     override fun deserialize(decoder: Decoder): Message {
         var senderName = ""
         var timestampMs: Instant = Instant.fromEpochMilliseconds(0)
-        val photosSerializer = ListSerializer(Photo.serializer())
-        var photos: List<Photo> = mutableListOf()
+        val mediaSerializer = ListSerializer(Media.serializer())
+        var videos: List<Media> = mutableListOf()
+        var photos: List<Media> = mutableListOf()
         var content = ""
         val reactionSerializer = ListSerializer(Reaction.serializer())
         var reactions: List<Reaction> = mutableListOf()
@@ -77,39 +118,42 @@ object MessageSerializer : KSerializer<Message> {
                 when (val index = decodeElementIndex(descriptor)) {
                     0 -> senderName =
                         decodeStringElement(descriptor, 0).toByteArray(Charsets.ISO_8859_1).toString(Charsets.UTF_8)
+
                     1 -> timestampMs = Instant.fromEpochMilliseconds(decodeLongElement(descriptor, 1))
-                    2 -> photos = photosSerializer.deserialize(decoder)
-                    3 -> content =
+                    2 -> videos = mediaSerializer.deserialize(decoder)
+                    3 -> photos = mediaSerializer.deserialize(decoder)
+                    4 -> content =
                         decodeStringElement(descriptor, 3).toByteArray(Charsets.ISO_8859_1).toString(Charsets.UTF_8)
-                    4 -> reactions = reactionSerializer.deserialize(decoder)
-                    5 -> isGeoblockedForViewer = decodeBooleanElement(descriptor, 4)
+
+                    5 -> reactions = reactionSerializer.deserialize(decoder)
+                    6 -> isGeoblockedForViewer = decodeBooleanElement(descriptor, 4)
                     CompositeDecoder.DECODE_DONE -> break
                     else -> error("Unexpected index: $index")
                 }
             }
         }
-        return Message(senderName, timestampMs, photos, content, reactions, isGeoblockedForViewer)
+        return Message(senderName, timestampMs, videos, photos, content, reactions, isGeoblockedForViewer)
     }
 }
 
 
-object PhotoSerializer : KSerializer<Photo> {
+object MediaSerializer: KSerializer<Media> {
     override val descriptor: SerialDescriptor = buildClassSerialDescriptor("Photo") {
         element<String>("uri")
-        element<Long>("creation_ms")
+        element<Long>("creation_timestamp")
     }
 
-    override fun serialize(encoder: Encoder, value: Photo) =
+    override fun serialize(encoder: Encoder, value: Media) =
         encoder.encodeStructure(descriptor) {
             encodeStringElement(descriptor, 0, value.uri)
             encodeLongElement(descriptor, 1, value.creationMs.toEpochMilliseconds())
         }
 
-    override fun deserialize(decoder: Decoder): Photo {
+    override fun deserialize(decoder: Decoder): Media {
         var uri = ""
         var creationMs: Instant = Instant.fromEpochMilliseconds(0)
         decoder.decodeStructure(descriptor) {
-             while (true) {
+            while (true) {
                 when (val index = decodeElementIndex(descriptor)) {
                     0 -> uri =
                         decodeStringElement(descriptor, 0)
@@ -120,7 +164,7 @@ object PhotoSerializer : KSerializer<Photo> {
                 }
             }
         }
-        return Photo(uri, creationMs)
+        return Media(uri, creationMs)
     }
 }
 
