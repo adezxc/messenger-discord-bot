@@ -4,6 +4,7 @@ import kotlinx.datetime.Instant
 import kotlinx.serialization.*
 import kotlinx.serialization.encoding.*
 import kotlinx.serialization.descriptors.*
+import java.util.UUID
 import kotlin.text.Charsets
 
 @Serializable
@@ -19,8 +20,9 @@ data class Participant(
 
 @Serializable
 data class Message(
-    @SerialName("sender_name") val senderName: LatinString,
-    @Serializable(with = InstantSerializer::class) @SerialName("timestamp_ms") val timestampMs: Instant,
+    val id: String = UUID.randomUUID().toString(),
+    @SerialName("sender_name") @Required val senderName: LatinString,
+    @SerialName("timestamp_ms") @Serializable(with = InstantSerializer::class) @Required val timestampMs: Instant,
     val videos: List<Media>? = null,
     val photos: List<Media>? = null,
     val content: LatinString? = null,
