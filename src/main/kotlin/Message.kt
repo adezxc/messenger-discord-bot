@@ -9,8 +9,12 @@ import kotlin.text.Charsets
 
 @Serializable
 data class DumpFile(
+    var sha256sum: String? = null,
     val participants: List<Participant>? = null,
     val messages: List<Message>? = null,
+    val title: LatinString,
+    @SerialName("thread_path") val threadPath: LatinString,
+    val image: Media? = null,
 )
 
 @Serializable
@@ -32,6 +36,7 @@ data class Message(
 
 @Serializable
 data class Media(
+    val id: String = UUID.randomUUID().toString(),
     val uri: String,
     @Serializable(with = InstantSerializer::class) @SerialName("creation_timestamp") val creationMs: Instant,
 )

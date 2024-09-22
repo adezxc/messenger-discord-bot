@@ -21,20 +21,6 @@ dependencies {
     implementation("org.slf4j:slf4j-simple:1.6.1")
 }
 
-tasks.register<Exec>("myPrebuildTask") {
-    val db = File("$projectDir/sample.db")
-
-    workingDir("$projectDir")
-    db.delete()
-    commandLine(
-        listOf("sqlite3", "sample.db < $projectDir/src/sql/schema.sql")
-    )
-}
-
-tasks.named("compileKotlin") {
-    dependsOn("myPrebuildTask")
-}
-
 tasks.test {
     useJUnitPlatform()
 }
